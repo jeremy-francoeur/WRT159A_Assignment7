@@ -1,0 +1,68 @@
+%% Program P2_2: FD Wave Propagation Movie
+clear all
+load('Lab2A.mat');
+
+U0 = zeros(nx,1);
+U1 = zeros(nx,1);
+U2 = zeros(nx,1);
+
+%% Movie parameters
+f = figure;
+f.Color = 'w';
+ax = gca;
+ax.NextPlot = 'replaceChildren';
+axis([-xm xm -2.0 2.0]); %adjust if necessary
+grid on;
+xlabel("Distance [km]");
+ylabel("Amplitude [km]");
+% save the data and some other figure parameters
+M = struct('cdata',[],'colormap',[]);
+time_steps = round(tmax/dt+1);
+
+%% Movie loop
+% x domain vector, it never changes so leave it outside of the for loop
+xv = 0:dx:xm;
+for j=0:time_steps
+%% plot for each time step, add title that updates
+% Here the plot is saves as a frame
+t = dt*j;
+%% Calculate U2 based on U1 and U0, see finite difference equation
+% Note that the t terms are not explicitly used in this part
+for i=2:nx-1
+U2(i) = c*c*(U1(i+1)-2*U1(i)+U1(i-1)) + 2*U1(i) - U0(i);
+end
+%% Boundary conditions
+U2(1) = 0.0; % Left side of grid
+U2(nx) = 0.0; % Right side of grid
+%% Source function
+if t<sd
+U2(nsp) = 1.0 - cos(2*pi*t/sd);
+end
+%% Loop to set current displacement value to past displacement value
+% and future displacement value to current displacement value.
+for i=1:nx
+U0(i) = U1(i);
+U1(i) = U2(i);
+end
+h=dt*j;
+plot(scale,U2(:,1),'g')
+legend('U2');
+axis([0 xm -10.0 10.0]);
+titlee = sprintf('Time = %f sec',h);
+title(titlee);
+xlabel('Distance [km]');
+ylabel('Amplitude [km]');
+grid on
+hold off
+M(j+1)=getframe(gcf);
+end
+%% Save movie (v. large files, takes a long time!)
+movie_file_name = 'ProgramP2_2.avi';
+v = VideoWriter(movie_file_name);
+v.Quality = 30;
+v.FrameRate = 15;
+open(v)
+for i = 1:length(M)
+   writeVideo(v,M(1,i))
+end
+close(v)

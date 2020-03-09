@@ -1,0 +1,69 @@
+%Finite-Difference 1D Wave Propagation
+%% Initialize model parameters , arrays , etc.
+% dt - time step
+% nx - number of points for the discretized length
+% sp - source position in km
+% dx - distance step
+% U2 - displacement vector in time i+1 (future)
+% U1 - displacement vector in time i (present)
+% U0 - displacement vector in time i-1 (past)
+
+xm = 80.0; %model space dimension in km
+dx = 1.0; % discrete space step in km
+dt = .2; %discrete time step in seconds
+B = 2.0; %shear wave velocity in km/s
+sd = 4.0; %signal duration in seconds
+sp = 60.0; %source node position in km
+tmax = 60.0; %final computation time in seconds
+x=zeros(9,1);
+y=zeros(9,1);
+nx = xm/dx; %number of discrete x steps
+nt = tmax/dt; %number of discrete t steps
+scale = 1:nx;
+c=B*dt/dx; %for readability in my later equation
+U0 = zeros(nx,1);
+U1 = zeros(nx,1);
+U2 = zeros(nx,1);
+
+%% Finite-Difference loop through time
+for j=0:round(tmax/dt+1)
+t = dt*j;
+% Calculate U2 based on U1 and U0 from finite-difference method
+for i=2:nx-1
+U2(i) = c*c*(U1(i+1)-2*U1(i)+U1(i-1)) + 2*U1(i) - U0(i);
+end
+% Boundary conditions
+U2(1) = U2(1); % Left side of grid
+U2(nx) = U2(nx); % Right side of grid
+% Source function , see equation (8)
+if t<sd
+U2(nsp) = 1.0 - cos(2*pi*t/sd);
+end
+%% Loop to set current displacement value to past displacement value
+% and future displacement value to current displacement value. This is
+% where the t aspect of equation 7 comes in.
+for i=1:nx
+U0(i) = U1(i);
+U1(i) = U2(i);
+end
+% Plots for each time step
+figure(1)
+plot(scale,U2(:,1),'g')
+axis([0 80 -3 3])
+legend('U2');
+titlee = sprintf('Time = %f sec',t);
+title(titlee);
+xlabel('Distance [km]');
+ylabel('Amplitude [km]');
+grid on
+hold off
+% Save plots
+if rem(t,1) == 0
+time=sprintf('t=%d sec',t);
+figure_name = sprintf("Fig1_Project2a_%d.jpg",t);
+%saveas(gcf, figure_name)
+end
+end
+
+%% Save the needed data to be used in the next program!
+save('Lab2A');
